@@ -12,24 +12,39 @@ from bot.app.i18n import DEFAULT_LANGUAGE, LANGUAGE_OPTIONS, LanguageCode, t
 from bot.config import Config
 
 
+def admin_reply_keyboard(language: LanguageCode = DEFAULT_LANGUAGE) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t(language, "button_global_message")),
+                KeyboardButton(text=t(language, "button_bot_users")),
+            ],
+            [
+                KeyboardButton(text=t(language, "button_back")),
+            ],
+        ],
+        resize_keyboard=True,
+        input_field_placeholder=t(language, "admin_keyboard_placeholder"),
+    )
+
+
 def main_reply_keyboard(config: Config, language: LanguageCode = DEFAULT_LANGUAGE, is_admin: bool = False) -> ReplyKeyboardMarkup:
     rows = [
         [
             KeyboardButton(text=t(language, "button_available_now")),
-            KeyboardButton(text=t(language, "button_next_lesson")),
+            KeyboardButton(text=t(language, "button_find_group")),
         ],
         [
             KeyboardButton(text=t(language, "button_busy_rooms")),
-            KeyboardButton(text=t(language, "button_status")),
+            KeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url)),
         ],
         [
-            KeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url)),
             KeyboardButton(text=t(language, "button_language")),
         ],
     ]
 
     if is_admin:
-        rows.append([KeyboardButton(text=t(language, "button_refresh_timetable"))])
+        rows.append([KeyboardButton(text=t(language, "button_admin"))])
 
     return ReplyKeyboardMarkup(
         keyboard=rows,
@@ -43,11 +58,10 @@ def inline_action_keyboard(config: Config, language: LanguageCode = DEFAULT_LANG
         inline_keyboard=[
             [
                 InlineKeyboardButton(text=t(language, "button_available_now"), callback_data="rooms:now"),
-                InlineKeyboardButton(text=t(language, "button_next_lesson"), callback_data="rooms:next"),
+                InlineKeyboardButton(text=t(language, "button_find_group"), callback_data="group:ask"),
             ],
             [
                 InlineKeyboardButton(text=t(language, "button_busy_rooms"), callback_data="busy:now"),
-                InlineKeyboardButton(text=t(language, "button_status"), callback_data="status"),
             ],
             [
                 InlineKeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url)),

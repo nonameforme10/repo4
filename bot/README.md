@@ -16,7 +16,6 @@ Required environment variables are loaded from the project root `.env.local`:
 TELEGRAM_BOT_TOKEN=123:abc
 ROOM_FINDER_API_BASE=https://project-kxc4g.vercel.app
 MINI_APP_URL=https://project-kxc4g.vercel.app
-REFRESH_TOKEN=optional-refresh-token
 ADMINID=5426775640
 ```
 
@@ -46,9 +45,9 @@ After changing server env vars, restart the PM2 process:
 pm2 restart timetable-bot
 ```
 
-## User Menu
+## User Menu And Commands
 
-The public slash-command menu is hidden. On first `/start`, users choose a language:
+On first `/start`, users choose a language:
 
 - UZB
 - RUS
@@ -59,17 +58,35 @@ The selected language is saved in `data/bot-user-languages.json` and can be chan
 After language selection, users get a persistent Telegram reply keyboard with localized labels for:
 
 - Available now
-- Next lesson
+- Find group
 - Busy rooms
-- Status
 - Open app
 - Language
+- Admin, only for configured admins
 
-Typed examples still work:
+The bot also registers slash commands for clients that cannot use the reply keyboard:
 
-- `room 304`
-- `group 102`
-- `when Friday 10:30`
-- `stay 10:30 13:20`
+- `/start` - choose language and open menu
+- `/menu` - show the main menu
+- `/language` or `/settings` - change language
+- `/help` - show examples
+- `/rooms` - available rooms now
+- `/busy` - busy rooms now
+- `/group` - ask for a group number and show today's plan
+- `/webapp` - open the Mini App
 
-`/refresh` is only registered for `ADMINID` and refreshes timetable data if `REFRESH_TOKEN` is configured.
+Typed examples still work with or without a slash:
+
+- `/room 304`
+- `/group 25-102`
+- `/group 102`
+- `/when Friday 10:30`
+- `/stay 10:30 13:20`
+
+Admins see an Admin button and these extra commands:
+
+- `/admin` - open the admin menu
+- `/broadcast` - send one message to all tracked bot users
+- `/users` - show how many users have used the bot and their Telegram nicknames
+
+Tracked users are stored in `data/bot-users.json`.

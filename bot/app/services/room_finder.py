@@ -19,9 +19,8 @@ class RoomFinderError(RuntimeError):
 
 
 class RoomFinderApi:
-    def __init__(self, base_url: str, refresh_token: str = "") -> None:
+    def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
-        self.refresh_token = refresh_token
         self._session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self) -> "RoomFinderApi":
@@ -163,12 +162,3 @@ class RoomFinderApi:
                 raise
 
             return await self.get_json("/timetable.json")
-
-    async def refresh(self) -> JsonDict:
-        if not self.refresh_token:
-            raise RoomFinderError("REFRESH_TOKEN is not configured for the bot.")
-
-        return await self.post_json(
-            "/api/refresh",
-            headers={"Authorization": f"Bearer {self.refresh_token}"},
-        )

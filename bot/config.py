@@ -51,12 +51,7 @@ class Config:
     bot_token: str
     room_finder_api_base: str
     mini_app_url: str
-    refresh_token: str
     admin_ids: set[int]
-
-    @property
-    def has_refresh(self) -> bool:
-        return bool(self.refresh_token)
 
     def is_admin(self, user_id: int | None) -> bool:
         return user_id is not None and user_id in self.admin_ids
@@ -86,6 +81,5 @@ def load_config() -> Config:
         bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "") or os.getenv("TELEGRAM-BOT-TOKEN", ""),
         room_finder_api_base=api_base,
         mini_app_url=mini_app_url,
-        refresh_token=os.getenv("REFRESH_TOKEN", ""),
         admin_ids=admin_ids,
     )

@@ -72,16 +72,6 @@ async def rooms_button(message: Message, api: RoomFinderApi, language_store: Lan
     await send_available(message, api, mode="now", lang=message_language(message, language_store))
 
 
-@router.message(Command("next"))
-async def next_rooms(message: Message, api: RoomFinderApi, language_store: LanguageStore) -> None:
-    await send_available(message, api, mode="next", lang=message_language(message, language_store), query=command_args(message))
-
-
-@router.message(lambda message: button_matches(message.text, "button_next_lesson"))
-async def next_rooms_button(message: Message, api: RoomFinderApi, language_store: LanguageStore) -> None:
-    await send_available(message, api, mode="next", lang=message_language(message, language_store))
-
-
 @router.message(Command("busy"))
 async def busy(message: Message, api: RoomFinderApi, language_store: LanguageStore) -> None:
     lang = message_language(message, language_store)
@@ -219,14 +209,6 @@ async def rooms_now_callback(callback: CallbackQuery, api: RoomFinderApi, langua
     await callback.answer()
     if callback.message:
         await send_available(callback.message, api, mode="now", lang=lang)
-
-
-@router.callback_query(F.data == "rooms:next")
-async def rooms_next_callback(callback: CallbackQuery, api: RoomFinderApi, language_store: LanguageStore) -> None:
-    lang = callback_language(callback, language_store)
-    await callback.answer()
-    if callback.message:
-        await send_available(callback.message, api, mode="next", lang=lang)
 
 
 @router.callback_query(F.data == "busy:now")

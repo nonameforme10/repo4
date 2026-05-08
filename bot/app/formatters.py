@@ -134,29 +134,6 @@ def format_group(
         f"{e(day_name(lang, status.get('day')))} {e(status.get('time'))}",
     ]
 
-    if current:
-        lines.append(f"\n<b>{t(lang, 'now')}</b>")
-        for item in current[:8]:
-            slot = item["slot"]
-            room = item["room"]
-            lines.append(
-                f"{e(item['group'])}: {t(lang, 'room_word')} <b>{e(room.get('room'))}</b>, "
-                f"{e(slot.get('subject') or t(lang, 'class_fallback'))} {e(slot.get('start'))}-{e(slot.get('end'))}"
-            )
-    else:
-        lines.append(f"\n{t(lang, 'no_current_class')}")
-
-    next_items = [item for item in schedule if item.get("state") == "next"]
-    if next_items:
-        lines.append(f"\n<b>{t(lang, 'next')}</b>")
-        for item in next_items[:6]:
-            slot = item["slot"]
-            room = item["room"]
-            lines.append(
-                f"{e(item['group'])}: {t(lang, 'room_word')} <b>{e(room.get('room'))}</b>, "
-                f"{e(slot.get('start'))}-{e(slot.get('end'))}"
-            )
-
     if schedule:
         lines.append(f"\n<b>{t(lang, 'day_schedule')}</b>")
         for item in schedule[:10]:
@@ -164,12 +141,12 @@ def format_group(
             room = item["room"]
             marker = {
                 "current": t(lang, "state_current"),
-                "next": t(lang, "state_next"),
                 "past": t(lang, "state_past"),
             }.get(str(item.get("state")), t(lang, "state_later"))
             lines.append(
                 f"{e(slot.get('start'))}-{e(slot.get('end'))} [{marker}] "
-                f"{e(slot.get('subject') or t(lang, 'class_fallback'))} - {e(room.get('room'))}"
+                f"{e(slot.get('subject') or t(lang, 'class_fallback'))} - "
+                f"{t(lang, 'room_word')} <b>{e(room.get('room'))}</b>"
             )
 
         if len(schedule) > 10:
