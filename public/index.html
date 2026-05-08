@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Find available PDP rooms by current time, day, and lesson schedule.">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://project-kxc4g.vercel.app/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PDP Room Finder">
+    <meta property="og:title" content="PDP Room Finder">
+    <meta property="og:description" content="Find available PDP rooms by current time, day, and lesson schedule.">
+    <meta property="og:url" content="https://project-kxc4g.vercel.app/">
+    <meta property="og:image" content="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <meta property="og:image:url" content="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <meta property="og:image:secure_url" content="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="PDP Room Finder realtime campus room availability dashboard">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PDP Room Finder">
+    <meta name="twitter:description" content="Find available PDP rooms by current time, day, and lesson schedule.">
+    <meta name="twitter:image" content="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <meta name="twitter:image:src" content="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <meta name="twitter:image:alt" content="PDP Room Finder realtime campus room availability dashboard">
+    <meta name="theme-color" content="#050606">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PDP Rooms">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="image_src" href="https://project-kxc4g.vercel.app/assets/share-preview-20260506.png">
+    <title>PDP Room Finder</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="PDP Room Finder">
+          <img class="brand-mark" src="icon.svg" alt="" aria-hidden="true" width="42" height="42">
+          <span>PDP ROOMS</span>
+        </a>
+        <nav class="nav-links" aria-label="Dashboard sections">
+          <a href="#terminal">Terminal</a>
+          <a href="#finder">Finder</a>
+          <a href="#groups">Groups</a>
+          <a href="#rooms">Rooms</a>
+          <a href="#sync">Sync</a>
+        </nav>
+        <div class="top-actions">
+          <div id="languageSwitcher" class="language-switcher" role="radiogroup" aria-label="Language"></div>
+          <button id="languageCompactButton" class="language-compact-button" type="button" aria-label="Language"></button>
+          <button id="refreshButton" type="button" data-i18n="refresh">Refresh</button>
+          <time id="clock" datetime=""></time>
+        </div>
+      </header>
+
+      <section id="top" class="hero-panel">
+        <img
+          class="hero-banner"
+          src="assets/room-finder-hero.jpg"
+          alt="Room Finder realtime campus routing banner"
+          data-i18n-alt="heroAlt"
+          width="1200"
+          height="630"
+          fetchpriority="high"
+          decoding="async"
+        >
+      </section>
+
+      <section id="terminal" class="metrics" aria-label="Room status summary">
+        <div class="metric available">
+          <span class="metric-value" id="availableCount">0</span>
+          <span class="metric-label" data-i18n="available">Available</span>
+        </div>
+        <div class="metric busy">
+          <span class="metric-value" id="busyCount">0</span>
+          <span class="metric-label" data-i18n="busy">Busy</span>
+        </div>
+        <div class="metric total">
+          <span class="metric-value" id="totalCount">0</span>
+          <span class="metric-label" data-i18n="rooms">Rooms</span>
+        </div>
+      </section>
+
+      <section id="finder" class="control-band" aria-label="Finder controls">
+        <label>
+          <span data-i18n="when">When</span>
+          <select id="modeSelect">
+            <option value="now" data-i18n="rightNow">Right now</option>
+            <option value="next" data-i18n="nextLesson">Next lesson</option>
+            <option value="custom" data-i18n="customTime">Custom time</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="day">Day</span>
+          <select id="daySelect"></select>
+        </label>
+        <label>
+          <span data-i18n="from">From</span>
+          <input id="timeInput" type="time">
+        </label>
+        <label>
+          <span data-i18n="until">Until</span>
+          <input id="stayUntilInput" type="time">
+        </label>
+        <label class="search-label">
+          <span data-i18n="room">Room</span>
+          <input id="searchInput" type="search" placeholder="Search rooms" data-i18n-placeholder="searchRooms">
+        </label>
+        <label class="check-label">
+          <input id="showBusyToggle" type="checkbox" checked>
+          <span data-i18n="showBusy">Show busy</span>
+        </label>
+      </section>
+
+      <section id="groups" class="group-finder" aria-label="Group locator">
+        <div class="section-title">
+          <h2 data-i18n="groupLocator">Group Locator</h2>
+          <span id="groupLookupTime"></span>
+        </div>
+        <label class="group-search-label">
+          <span data-i18n="group">Group</span>
+          <input id="groupSearchInput" type="search" placeholder="102">
+        </label>
+        <div id="groupResults" class="group-results" aria-live="polite"></div>
+      </section>
+
+      <section class="finder">
+        <div>
+          <div class="section-title">
+            <h2 data-i18n="whereToGo">Where To Go</h2>
+            <span id="modeLabel">Right now</span>
+          </div>
+          <div id="availableList" class="room-strip" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="finder stay-finder">
+        <div>
+          <div class="section-title">
+            <h2 data-i18n="fullStay">Full Stay</h2>
+            <span id="stayLabel"></span>
+          </div>
+          <div id="stayAvailableList" class="room-strip" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="rooms">
+        <div id="sync" class="section-title">
+          <h2 data-i18n="liveStatus">Live Status</h2>
+          <span id="dataFreshness"></span>
+        </div>
+        <div id="roomGrid" class="floor-groups" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

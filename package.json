@@ -1,0 +1,42 @@
+{
+  "name": "pdp-room-timetable",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "bot:dev": "python -m bot.main",
+    "bot:dev:venv": ".\\bot\\.venv\\Scripts\\python.exe -m bot.main",
+    "bot:install": "python -m pip install -r bot/requirements.txt",
+    "legacy:dev": "node server.js",
+    "sync": "node scripts/sync-timetable.js",
+    "sync:firebase": "node scripts/sync-timetable.js --push",
+    "check": "tsc --noEmit && node --check server.js && node --check src/edupage.js && node --check src/status.js && node --check public/app.js && node --check functions/index.js",
+    "emulators": "firebase emulators:start --only hosting,functions,database",
+    "deploy": "vercel --prod",
+    "deploy:firebase": "firebase deploy --only hosting,functions,database",
+    "deploy:firebase:rules": "firebase deploy --only database",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:vercel:prod": "vercel --prod",
+    "start": "next start"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "overrides": {
+    "postcss": "^8.5.14"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}

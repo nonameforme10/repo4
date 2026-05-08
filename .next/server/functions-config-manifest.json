@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/refresh": {},
+    "/api/status": {},
+    "/api/telegram/auth": {},
+    "/api/timetable": {}
+  }
+}

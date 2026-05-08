@@ -1,0 +1,14 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "metadata": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "timetable": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

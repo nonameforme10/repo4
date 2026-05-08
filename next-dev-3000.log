@@ -1,0 +1,25 @@
+
+> pdp-room-timetable@1.0.0 dev
+> next dev --port 3000
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.155.70:3000
+- Environments: .env.local
+✓ Ready in 736ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Hunte\\OneDrive\\Desktop\\time table',
+  testMode: true
+}
+
+ POST /api/telegram/auth 500 in 640ms (next.js: 615ms, application-code: 25ms)
+ GET / 200 in 668ms (next.js: 279ms, application-code: 389ms)
+  Reload env: .env.local
+  Reload env: .env.local
+  Reload env: .env.local
+ GET /api/status?mode=now 200 in 122ms (next.js: 77ms, application-code: 46ms)
+ GET /api/status?mode=now 200 in 30ms (next.js: 9ms, application-code: 21ms)
+ GET /api/status?mode=now 200 in 26ms (next.js: 7ms, application-code: 18ms)
+ GET /api/status?mode=now 200 in 25ms (next.js: 8ms, application-code: 17ms)
+ GET /api/status?mode=next 200 in 26ms (next.js: 6ms, application-code: 21ms)
+ GET /api/status?mode=now 200 in 24ms (next.js: 8ms, application-code: 15ms)
