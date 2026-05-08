@@ -10,8 +10,9 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand, BotCommandScopeChat
 
 from bot.app.handlers import admin, common, group, rooms
+from bot.app.language_store import LanguageStore
 from bot.app.services.room_finder import RoomFinderApi
-from bot.config import Config, load_config
+from bot.config import Config, ROOT_DIR, load_config
 
 
 ADMIN_COMMANDS = [
@@ -50,6 +51,7 @@ async def run(config: Config) -> None:
     )
     dispatcher = Dispatcher()
     dispatcher.include_routers(admin.router, rooms.router, group.router, common.router)
+    language_store = LanguageStore(ROOT_DIR / "data" / "bot-user-languages.json")
 
     async with RoomFinderApi(config.room_finder_api_base, config.refresh_token) as api:
         await set_commands(bot, config)
@@ -58,6 +60,7 @@ async def run(config: Config) -> None:
             allowed_updates=dispatcher.resolve_used_update_types(),
             config=config,
             api=api,
+            language_store=language_store,
         )
 
 

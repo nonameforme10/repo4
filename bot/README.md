@@ -48,13 +48,22 @@ pm2 restart timetable-bot
 
 ## User Menu
 
-The public slash-command menu is hidden. Users get a persistent Telegram reply keyboard with:
+The public slash-command menu is hidden. On first `/start`, users choose a language:
+
+- UZB
+- RUS
+- ENG
+
+The selected language is saved in `data/bot-user-languages.json` and can be changed later with `/language` or the language button.
+
+After language selection, users get a persistent Telegram reply keyboard with localized labels for:
 
 - Available now
 - Next lesson
 - Busy rooms
 - Status
 - Open app
+- Language
 
 Typed examples still work:
 

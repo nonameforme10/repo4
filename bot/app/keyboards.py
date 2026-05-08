@@ -8,55 +8,68 @@ from aiogram.types import (
     WebAppInfo,
 )
 
+from bot.app.i18n import DEFAULT_LANGUAGE, LANGUAGE_OPTIONS, LanguageCode, t
 from bot.config import Config
 
 
-def main_reply_keyboard(config: Config, is_admin: bool = False) -> ReplyKeyboardMarkup:
+def main_reply_keyboard(config: Config, language: LanguageCode = DEFAULT_LANGUAGE, is_admin: bool = False) -> ReplyKeyboardMarkup:
     rows = [
         [
-            KeyboardButton(text="Available now"),
-            KeyboardButton(text="Next lesson"),
+            KeyboardButton(text=t(language, "button_available_now")),
+            KeyboardButton(text=t(language, "button_next_lesson")),
         ],
         [
-            KeyboardButton(text="Busy rooms"),
-            KeyboardButton(text="Status"),
+            KeyboardButton(text=t(language, "button_busy_rooms")),
+            KeyboardButton(text=t(language, "button_status")),
         ],
         [
-            KeyboardButton(text="Open app", web_app=WebAppInfo(url=config.mini_app_url)),
+            KeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url)),
+            KeyboardButton(text=t(language, "button_language")),
         ],
     ]
 
     if is_admin:
-        rows.append([KeyboardButton(text="Refresh timetable")])
+        rows.append([KeyboardButton(text=t(language, "button_refresh_timetable"))])
 
     return ReplyKeyboardMarkup(
         keyboard=rows,
         resize_keyboard=True,
-        input_field_placeholder="Choose an action...",
+        input_field_placeholder=t(language, "keyboard_placeholder"),
     )
 
 
-def inline_action_keyboard(config: Config) -> InlineKeyboardMarkup:
+def inline_action_keyboard(config: Config, language: LanguageCode = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Available now", callback_data="rooms:now"),
-                InlineKeyboardButton(text="Next lesson", callback_data="rooms:next"),
+                InlineKeyboardButton(text=t(language, "button_available_now"), callback_data="rooms:now"),
+                InlineKeyboardButton(text=t(language, "button_next_lesson"), callback_data="rooms:next"),
             ],
             [
-                InlineKeyboardButton(text="Busy rooms", callback_data="busy:now"),
-                InlineKeyboardButton(text="Status", callback_data="status"),
+                InlineKeyboardButton(text=t(language, "button_busy_rooms"), callback_data="busy:now"),
+                InlineKeyboardButton(text=t(language, "button_status"), callback_data="status"),
             ],
             [
-                InlineKeyboardButton(text="Open app", web_app=WebAppInfo(url=config.mini_app_url)),
+                InlineKeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url)),
             ],
         ]
     )
 
 
-def web_app_keyboard(config: Config) -> InlineKeyboardMarkup:
+def language_selector_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Open PDP Room Finder", web_app=WebAppInfo(url=config.mini_app_url))]
+            [
+                InlineKeyboardButton(text=option["button"], callback_data=f"language:{option['code']}")
+                for option in LANGUAGE_OPTIONS
+            ],
+        ]
+    )
+
+
+def web_app_keyboard(config: Config, language: LanguageCode = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t(language, "button_open_app"), web_app=WebAppInfo(url=config.mini_app_url))]
         ]
     )
