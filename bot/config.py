@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_ADMIN_IDS = {5426775640}
+DEFAULT_PUBLIC_URL = "https://project-kxc4g.vercel.app"
 
 for env_file in (ROOT_DIR / ".env.local", ROOT_DIR / ".env", ROOT_DIR / "bot" / ".env"):
     if env_file.exists():
@@ -31,6 +32,15 @@ def _csv_ints(value: str) -> set[int]:
     return result
 
 
+def _first_env(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value.rstrip("/")
+
+    return default.rstrip("/")
+
+
 @dataclass(frozen=True)
 class Config:
     bot_token: str
@@ -48,8 +58,19 @@ class Config:
 
 
 def load_config() -> Config:
-    api_base = os.getenv("ROOM_FINDER_API_BASE", "http://localhost:3000").rstrip("/")
-    mini_app_url = os.getenv("MINI_APP_URL", "https://project-kxc4g.vercel.app").rstrip("/")
+    api_base = _first_env(
+        "ROOM_FINDER_API_BASE",
+        "API_URL",
+        "WEB_APP_URL",
+        default=DEFAULT_PUBLIC_URL,
+    )
+    mini_app_url = _first_env(
+        "MINI_APP_URL",
+        "WEB_APP_URL",
+        "ROOM_FINDER_API_BASE",
+        "API_URL",
+        default=DEFAULT_PUBLIC_URL,
+    )
     admin_ids = set(DEFAULT_ADMIN_IDS)
     admin_ids.update(_csv_ints(os.getenv("ADMINID", "")))
     admin_ids.update(_csv_ints(os.getenv("BOT_ADMIN_IDS", "")))
