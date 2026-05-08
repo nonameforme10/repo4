@@ -1,9 +1,56 @@
-.vercel
+# Secrets and local environment
 .env
-.env*.local
+.env.*
+!.env.example
+!.env.*.example
+app/.env
+app/.env.*
 bot/.env
-bot/.venv
+bot/.env.*
+
+# Dependencies
+node_modules/
+functions/node_modules/
+bot/.venv/
+.venv/
+venv/
+
+# Next.js and Vercel local state
+.next/
+out/
+.vercel/
+
+# Firebase and generated timetable data
+data/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+next-dev-*.log
+firebase-debug.log*
+firestore-debug.log*
+
+# Python cache/build output
 __pycache__/
 *.py[cod]
-node_modules
-npm-debug.log*
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# TypeScript/build cache
+*.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

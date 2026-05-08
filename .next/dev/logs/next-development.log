@@ -1,4 +1,0 @@
-{"timestamp":"00:00:01.951","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:22:13.563","source":"Server","level":"LOG","message":"  Reload env: .env.local"}
-{"timestamp":"00:29:52.076","source":"Server","level":"LOG","message":"  Reload env: .env.local"}
-{"timestamp":"00:30:22.550","source":"Server","level":"LOG","message":"  Reload env: .env.local"}

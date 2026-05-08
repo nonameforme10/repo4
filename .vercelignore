@@ -1,0 +1,45 @@
+# Secrets and local environment
+.env
+.env.*
+app/.env
+app/.env.*
+bot/.env
+bot/.env.*
+
+# Local platform state and build output
+.git/
+.github/
+.vercel/
+.next/
+out/
+
+# Dependencies and Python runtime
+node_modules/
+functions/node_modules/
+bot/.venv/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Bot and non-Vercel runtime code
+bot/
+functions/
+scripts/
+server.js
+firebase.js
+firebase.json
+.firebaserc
+rtd-rules.json
+deploy.bat
+
+# Logs and caches
+*.log
+next-dev-*.log
+*.tsbuildinfo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local/generated data
+data/

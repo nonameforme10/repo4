@@ -1,9 +1,0 @@
-{
-  "/_global-error/page": "app/_global-error/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/refresh/route": "app/api/refresh/route.js",
-  "/api/status/route": "app/api/status/route.js",
-  "/api/telegram/auth/route": "app/api/telegram/auth/route.js",
-  "/api/timetable/route": "app/api/timetable/route.js",
-  "/page": "app/page.js"
-}
