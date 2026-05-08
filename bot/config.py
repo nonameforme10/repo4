@@ -41,6 +41,11 @@ def _first_env(*names: str, default: str = "") -> str:
     return default.rstrip("/")
 
 
+def _normalize_api_base(value: str) -> str:
+    value = value.rstrip("/")
+    return value[:-4] if value.endswith("/api") else value
+
+
 @dataclass(frozen=True)
 class Config:
     bot_token: str
@@ -58,11 +63,13 @@ class Config:
 
 
 def load_config() -> Config:
-    api_base = _first_env(
-        "ROOM_FINDER_API_BASE",
-        "API_URL",
-        "WEB_APP_URL",
-        default=DEFAULT_PUBLIC_URL,
+    api_base = _normalize_api_base(
+        _first_env(
+            "ROOM_FINDER_API_BASE",
+            "API_URL",
+            "WEB_APP_URL",
+            default=DEFAULT_PUBLIC_URL,
+        )
     )
     mini_app_url = _first_env(
         "MINI_APP_URL",

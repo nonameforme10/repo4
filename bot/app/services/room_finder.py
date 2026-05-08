@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import aiohttp
+
+from bot.app.availability import get_availability
 
 
 JsonDict = dict[str, Any]
 
 
 class RoomFinderError(RuntimeError):
-    pass
+    def __init__(self, message: str, status: int | None = None, url: str | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.url = url
 
 
 class RoomFinderApi:
@@ -44,14 +50,35 @@ class RoomFinderApi:
         url = f"{self.base_url}/{path.lstrip('/')}"
 
         async with self.session.get(url, params=params) as response:
-            payload = await response.json(content_type=None)
+            text = await response.text()
+            payload: Any = None
+
+            if text.strip():
+                try:
+                    payload = json.loads(text)
+                except json.JSONDecodeError as error:
+                    content_type = response.headers.get("content-type", "unknown")
+                    snippet = " ".join(text.strip().split())[:180]
+                    raise RoomFinderError(
+                        f"Expected JSON from {url}, got HTTP {response.status} {content_type}: {snippet}",
+                        status=response.status,
+                        url=url,
+                    ) from error
 
             if response.status >= 400:
                 message = payload.get("error") if isinstance(payload, dict) else None
-                raise RoomFinderError(message or f"Room Finder API returned HTTP {response.status}.")
+                raise RoomFinderError(
+                    message or f"Room Finder API returned HTTP {response.status} for {url}.",
+                    status=response.status,
+                    url=url,
+                )
 
             if not isinstance(payload, dict):
-                raise RoomFinderError("Room Finder API returned an unexpected response.")
+                raise RoomFinderError(
+                    f"Room Finder API returned an unexpected response from {url}.",
+                    status=response.status,
+                    url=url,
+                )
 
             return payload
 
@@ -64,14 +91,35 @@ class RoomFinderApi:
         url = f"{self.base_url}/{path.lstrip('/')}"
 
         async with self.session.post(url, params=params, headers=headers) as response:
-            payload = await response.json(content_type=None)
+            text = await response.text()
+            payload: Any = None
+
+            if text.strip():
+                try:
+                    payload = json.loads(text)
+                except json.JSONDecodeError as error:
+                    content_type = response.headers.get("content-type", "unknown")
+                    snippet = " ".join(text.strip().split())[:180]
+                    raise RoomFinderError(
+                        f"Expected JSON from {url}, got HTTP {response.status} {content_type}: {snippet}",
+                        status=response.status,
+                        url=url,
+                    ) from error
 
             if response.status >= 400:
                 message = payload.get("error") if isinstance(payload, dict) else None
-                raise RoomFinderError(message or f"Room Finder API returned HTTP {response.status}.")
+                raise RoomFinderError(
+                    message or f"Room Finder API returned HTTP {response.status} for {url}.",
+                    status=response.status,
+                    url=url,
+                )
 
             if not isinstance(payload, dict):
-                raise RoomFinderError("Room Finder API returned an unexpected response.")
+                raise RoomFinderError(
+                    f"Room Finder API returned an unexpected response from {url}.",
+                    status=response.status,
+                    url=url,
+                )
 
             return payload
 
@@ -91,10 +139,30 @@ class RoomFinderApi:
         if reload_data:
             params["reload"] = "1"
 
-        return await self.get_json("/api/status", params=params)
+        try:
+            return await self.get_json("/api/status", params=params)
+        except RoomFinderError as error:
+            if error.status != 404:
+                raise
+
+            timetable = await self.get_json("/timetable.json")
+            return get_availability(
+                timetable,
+                {
+                    "mode": mode,
+                    "day": day,
+                    "time": time,
+                },
+            )
 
     async def timetable(self) -> JsonDict:
-        return await self.get_json("/api/timetable")
+        try:
+            return await self.get_json("/api/timetable")
+        except RoomFinderError as error:
+            if error.status != 404:
+                raise
+
+            return await self.get_json("/timetable.json")
 
     async def refresh(self) -> JsonDict:
         if not self.refresh_token:
