@@ -48,6 +48,7 @@
           <a href="#terminal">Terminal</a>
           <a href="#finder">Finder</a>
           <a href="#groups">Groups</a>
+          <a href="#teachers">Teachers</a>
           <a href="#rooms">Rooms</a>
           <a href="#sync">Sync</a>
         </nav>
@@ -128,6 +129,19 @@
           <input id="groupSearchInput" type="search" placeholder="102">
         </label>
         <div id="groupResults" class="group-results" aria-live="polite"></div>
+      </section>
+
+      <section id="teachers" class="group-finder" aria-label="Teacher locator">
+        <div class="section-title">
+          <h2 data-i18n="teacherLocator">Teacher Locator</h2>
+          <span id="teacherLookupTime"></span>
+        </div>
+        <label class="group-search-label">
+          <span data-i18n="teacher">Teacher</span>
+          <input id="teacherSearchInput" type="search" list="teacherOptions" placeholder="Enter a teacher" data-i18n-placeholder="enterTeacher">
+        </label>
+        <datalist id="teacherOptions"></datalist>
+        <div id="teacherResults" class="group-results" aria-live="polite"></div>
       </section>
 
       <section class="finder">

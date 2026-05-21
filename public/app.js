@@ -60,6 +60,12 @@ const TRANSLATIONS = {
     showBusy: "Show busy",
     syncedAt: "Synced {value}",
     sync: "Sync",
+    teacher: "Teacher",
+    teacherLocator: "Teacher Locator",
+    enterTeacher: "Enter a teacher",
+    noMatchingTeacher: "Such teacher doesn't exist",
+    teacherHasNoClass: "Teacher has no class at this time",
+    teaching: "Teaching",
     terminal: "Terminal",
     until: "Until",
     when: "When",
@@ -117,6 +123,12 @@ const TRANSLATIONS = {
     showBusy: "Bandlarni ko'rsatish",
     syncedAt: "Sinxronlandi {value}",
     sync: "Sinxronlash",
+    teacher: "O'qituvchi",
+    teacherLocator: "O'qituvchi qayerda",
+    enterTeacher: "O'qituvchini kiriting",
+    noMatchingTeacher: "Bunday o'qituvchi mavjud emas",
+    teacherHasNoClass: "Bu vaqtda o'qituvchida dars yo'q",
+    teaching: "Dars bermoqda",
     terminal: "Terminal",
     until: "Tugash",
     when: "Qachon",
@@ -174,6 +186,12 @@ const TRANSLATIONS = {
     showBusy: "Показывать занятые",
     syncedAt: "Синхронизировано {value}",
     sync: "Синхронизация",
+    teacher: "Преподаватель",
+    teacherLocator: "Где преподаватель",
+    enterTeacher: "Введите преподавателя",
+    noMatchingTeacher: "Такого преподавателя не существует",
+    teacherHasNoClass: "У преподавателя сейчас нет занятия",
+    teaching: "Ведёт занятие",
     terminal: "Терминал",
     until: "До",
     when: "Когда",
@@ -192,6 +210,7 @@ const state = {
   lang: getSavedLanguage(),
   query: "",
   groupQuery: "",
+  teacherQuery: "",
   showBusy: true,
   stayUntil: "17:00",
   loadedControls: false,
@@ -214,14 +233,18 @@ const elements = {
   stayUntilInput: document.querySelector("#stayUntilInput"),
   searchInput: document.querySelector("#searchInput"),
   groupSearchInput: document.querySelector("#groupSearchInput"),
+  teacherSearchInput: document.querySelector("#teacherSearchInput"),
   showBusyToggle: document.querySelector("#showBusyToggle"),
   availableList: document.querySelector("#availableList"),
   stayAvailableList: document.querySelector("#stayAvailableList"),
   groupResults: document.querySelector("#groupResults"),
+  teacherResults: document.querySelector("#teacherResults"),
+  teacherOptions: document.querySelector("#teacherOptions"),
   roomGrid: document.querySelector("#roomGrid"),
   modeLabel: document.querySelector("#modeLabel"),
   stayLabel: document.querySelector("#stayLabel"),
   groupLookupTime: document.querySelector("#groupLookupTime"),
+  teacherLookupTime: document.querySelector("#teacherLookupTime"),
   dataFreshness: document.querySelector("#dataFreshness")
 };
 
@@ -478,6 +501,89 @@ function groupScheduleStateLabel(stateName) {
   if (stateName === "next") return t("nextClass");
   if (stateName === "past") return t("earlierClass");
   return t("lesson");
+}
+
+function slotTeacherNames(slot) {
+  const names = Array.isArray(slot.teachers)
+    ? slot.teachers.filter((item) => typeof item === "string")
+    : [];
+
+  if (typeof slot.teacher === "string" && slot.teacher && !names.includes(slot.teacher)) {
+    names.unshift(slot.teacher);
+  }
+
+  return names;
+}
+
+function teacherMatchesQuery(teacherName, query) {
+  const trimmed = String(query || "").trim().toLowerCase();
+  if (!trimmed) return false;
+
+  return teacherName.toLowerCase().includes(trimmed);
+}
+
+function matchingTeachers(slot, query) {
+  return slotTeacherNames(slot).filter((name) => teacherMatchesQuery(name, query));
+}
+
+function findTeacherMatches(rooms, query, time) {
+  if (!String(query || "").trim() || !time) return [];
+
+  return rooms.flatMap((room) => {
+    const currentSlot = room.dailyPlan?.find((slot) => slotActiveAt(slot, time));
+    if (!currentSlot) return [];
+
+    return matchingTeachers(currentSlot, query).map((teacher) => ({ teacher, room, slot: currentSlot }));
+  });
+}
+
+function teacherScheduleForDay(rooms, query, time) {
+  if (!String(query || "").trim()) return [];
+
+  const currentMinute = timeToMinutes(time);
+  const schedule = rooms.flatMap((room) =>
+    (room.dailyPlan ?? []).flatMap((slot) => {
+      if (slot.status !== "busy" || !slot.start || !slot.end) return [];
+
+      return matchingTeachers(slot, query).map((teacher) => ({
+        teacher,
+        room,
+        slot,
+        state: "later",
+        startMinute: timeToMinutes(slot.start),
+        endMinute: timeToMinutes(slot.end)
+      }));
+    })
+  ).sort((a, b) =>
+    a.startMinute - b.startMinute ||
+    a.endMinute - b.endMinute ||
+    compareRoomsByFloor(a.room, b.room)
+  );
+  const nextStart = schedule.find((item) => item.startMinute > currentMinute)?.startMinute ?? null;
+
+  return schedule.map((item) => ({
+    ...item,
+    state:
+      item.startMinute <= currentMinute && item.endMinute >= currentMinute
+        ? "current"
+        : nextStart !== null && item.startMinute === nextStart
+          ? "next"
+          : item.startMinute > currentMinute
+            ? "later"
+            : "past"
+  }));
+}
+
+function teacherNameList(rooms) {
+  const names = new Set();
+
+  for (const room of rooms) {
+    for (const slot of room.dailyPlan ?? []) {
+      for (const name of slotTeacherNames(slot)) names.add(name);
+    }
+  }
+
+  return [...names].sort((a, b) => a.localeCompare(b));
 }
 
 function nextDayName(days, currentDay) {
@@ -932,6 +1038,107 @@ function renderGroupLocator(status) {
   elements.groupResults.innerHTML = `${currentHtml}${nextHtml}${scheduleHtml}`;
 }
 
+function setTeacherOptions(status) {
+  const allRooms = [...status.available, ...status.busy];
+  elements.teacherOptions.innerHTML = teacherNameList(allRooms)
+    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+    .join("");
+}
+
+function renderTeacherLocator(status) {
+  const allRooms = [...status.available, ...status.busy].sort(compareRoomsByFloor);
+  const teacherMatches = findTeacherMatches(allRooms, state.teacherQuery, status.time);
+  const teacherDaySchedule = teacherScheduleForDay(allRooms, state.teacherQuery, status.time);
+  const nextTeacherClasses = teacherDaySchedule.filter((item) => item.state === "next");
+  const teacherHasDaySchedule = teacherDaySchedule.length > 0;
+
+  elements.teacherLookupTime.textContent = `${translatedDay(status.day)} ${status.time}`;
+
+  if (!state.teacherQuery.trim()) {
+    elements.teacherResults.innerHTML = `<div class="empty-state">${t("enterTeacher")}</div>`;
+    return;
+  }
+
+  const slotClassesText = (slot) => {
+    const classes = slotClassNames(slot);
+    return classes.length ? ` - ${escapeHtml(classes.join(", "))}` : "";
+  };
+
+  const currentHtml = teacherMatches.length
+    ? teacherMatches.map((match) => `
+      <article class="group-result-card current">
+        <div class="group-result-main">
+          <span class="group-result-kicker">${escapeHtml(t("teaching"))}</span>
+          <strong>${escapeHtml(match.teacher)}</strong>
+          <p>
+            ${escapeHtml(match.slot.subject || t("classFallback"))} - ${escapeHtml(match.slot.start)}-${escapeHtml(match.slot.end)}
+            ${slotClassesText(match.slot)}
+          </p>
+        </div>
+        <div class="group-result-meta">
+          <span>${escapeHtml(t("room"))}</span>
+          <strong>${escapeHtml(match.room.room)}</strong>
+          <button class="room-footer room-action" type="button" data-room-plan="${escapeHtml(match.room.roomKey)}">${escapeHtml(t("open"))}</button>
+        </div>
+      </article>
+    `).join("")
+    : `<div class="empty-state">${
+        teacherHasDaySchedule ? t("teacherHasNoClass") : t("noMatchingTeacher")
+      }</div>`;
+
+  const nextHtml = nextTeacherClasses.map((match) => `
+    <article class="group-result-card next">
+      <div class="group-result-main">
+        <span class="group-result-kicker">${escapeHtml(t("nextClass"))}</span>
+        <strong>${escapeHtml(match.teacher)}</strong>
+        <p>
+          ${escapeHtml(match.slot.subject || t("classFallback"))} - ${escapeHtml(match.slot.start)}-${escapeHtml(match.slot.end)}
+          ${slotClassesText(match.slot)}
+        </p>
+      </div>
+      <div class="group-result-meta">
+        <span>${escapeHtml(t("room"))}</span>
+        <strong>${escapeHtml(match.room.room)}</strong>
+        <button class="room-footer room-action" type="button" data-room-plan="${escapeHtml(match.room.roomKey)}">${escapeHtml(t("open"))}</button>
+      </div>
+    </article>
+  `).join("");
+
+  const scheduleHtml = teacherDaySchedule.length
+    ? `
+      <div class="group-schedule">
+        <div class="group-schedule-head">
+          <strong>${escapeHtml(t("dayClasses"))}</strong>
+          <span>${teacherDaySchedule.length} ${escapeHtml(t("lesson").toLowerCase())}</span>
+        </div>
+        <div class="group-schedule-list">
+          ${teacherDaySchedule.map((item) => `
+            <article class="group-schedule-item ${escapeHtml(item.state)}">
+              <div class="group-schedule-time">
+                <span>${escapeHtml(groupScheduleStateLabel(item.state))}</span>
+                <strong>${escapeHtml(item.slot.start)}-${escapeHtml(item.slot.end)}</strong>
+              </div>
+              <div class="group-schedule-main">
+                <strong>${escapeHtml(item.slot.subject || t("classFallback"))}</strong>
+                <p>
+                  ${escapeHtml(item.teacher)}
+                  ${slotClassesText(item.slot)}
+                </p>
+              </div>
+              <div class="group-schedule-room">
+                <span>${escapeHtml(t("room"))}</span>
+                <button class="room-action" type="button" data-room-plan="${escapeHtml(item.room.roomKey)}">${escapeHtml(item.room.room)}</button>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      </div>
+    `
+    : "";
+
+  elements.teacherResults.innerHTML = `${currentHtml}${nextHtml}${scheduleHtml}`;
+}
+
 function availableCard(room) {
   const next = room.nextBusyAt
     ? escapeHtml(t("freeUntil", { time: room.nextBusyAt }))
@@ -1028,6 +1235,8 @@ function render(status) {
   }
 
   renderGroupLocator(status);
+  setTeacherOptions(status);
+  renderTeacherLocator(status);
   renderAvailableList(status);
   renderStayAvailableList(status);
   renderGrid(status);
@@ -1043,6 +1252,7 @@ async function loadStatus(options = {}) {
     elements.availableList.innerHTML = `<div class="empty-state">${message}</div>`;
     elements.stayAvailableList.innerHTML = `<div class="empty-state">${message}</div>`;
     elements.groupResults.innerHTML = `<div class="empty-state">${message}</div>`;
+    elements.teacherResults.innerHTML = `<div class="empty-state">${message}</div>`;
     elements.roomGrid.innerHTML = `<div class="empty-state">${message}</div>`;
   } finally {
     elements.refreshButton.disabled = false;
@@ -1052,6 +1262,7 @@ async function loadStatus(options = {}) {
 function rerenderOnly() {
   if (state.status) {
     renderGroupLocator(state.status);
+    renderTeacherLocator(state.status);
     renderAvailableList(state.status);
     renderStayAvailableList(state.status);
     renderGrid(state.status);
@@ -1082,6 +1293,10 @@ elements.groupSearchInput.addEventListener("input", (event) => {
   state.groupQuery = event.target.value;
   rerenderOnly();
 });
+elements.teacherSearchInput.addEventListener("input", (event) => {
+  state.teacherQuery = event.target.value;
+  rerenderOnly();
+});
 elements.showBusyToggle.addEventListener("change", (event) => {
   state.showBusy = event.target.checked;
   rerenderOnly();
@@ -1092,6 +1307,11 @@ elements.roomGrid.addEventListener("click", (event) => {
   openRoomPlan(button.dataset.roomPlan);
 });
 elements.groupResults.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-room-plan]");
+  if (!button) return;
+  openRoomPlan(button.dataset.roomPlan);
+});
+elements.teacherResults.addEventListener("click", (event) => {
   const button = event.target.closest("[data-room-plan]");
   if (!button) return;
   openRoomPlan(button.dataset.roomPlan);
