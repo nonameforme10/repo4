@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const d=require\\('./public/timetable.json'\\); const rooms=d.timetable||d; const keys=Object.keys\\(rooms\\).filter\\(k=>k!=='metadata'\\); const teachers=new Set\\(\\); let sample=null; for\\(const k of keys\\){const r=rooms[k];for\\(const day of Object.keys\\(r\\)\\){if\\(day==='_room'\\)continue;const slots=r[day];for\\(const sk of Object.keys\\(slots\\)\\){const s=slots[sk];if\\(s.status==='busy'\\){if\\(!sample\\)sample=s;if\\(s.teacher\\)teachers.add\\(s.teacher\\);if\\(Array.isArray\\(s.teachers\\)\\)s.teachers.forEach\\(t=>teachers.add\\(t\\)\\);}}}} console.log\\('busy sample:',JSON.stringify\\(sample,null,1\\)\\); console.log\\('teacher count:',teachers.size\\); console.log\\([...teachers].slice\\(0,15\\)\\);\")"
+    ]
+  }
+}

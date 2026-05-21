@@ -261,6 +261,102 @@ function groupScheduleStateLabel(state: GroupScheduleState, t: Translator) {
   return t("lesson");
 }
 
+type TeacherMatch = {
+  teacher: string;
+  room: StatusRoom;
+  slot: TimetableSlot;
+};
+
+type TeacherScheduleItem = TeacherMatch & {
+  state: GroupScheduleState;
+  startMinute: number;
+  endMinute: number;
+};
+
+function slotTeacherNames(slot: TimetableSlot): string[] {
+  const names = Array.isArray(slot.teachers)
+    ? slot.teachers.filter((item): item is string => typeof item === "string")
+    : [];
+
+  if (typeof slot.teacher === "string" && slot.teacher && !names.includes(slot.teacher)) {
+    names.unshift(slot.teacher);
+  }
+
+  return names;
+}
+
+function teacherMatchesQuery(teacherName: string, query: string) {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return false;
+
+  return teacherName.toLowerCase().includes(trimmed);
+}
+
+function matchingTeachers(slot: TimetableSlot, query: string) {
+  return slotTeacherNames(slot).filter((name) => teacherMatchesQuery(name, query));
+}
+
+function findTeacherMatches(rooms: StatusRoom[], query: string, time: string): TeacherMatch[] {
+  if (!query.trim() || !time) return [];
+
+  return rooms.flatMap((room): TeacherMatch[] => {
+    const currentSlot = room.dailyPlan?.find((slot) => slotActiveAt(slot, time));
+    if (!currentSlot) return [];
+
+    return matchingTeachers(currentSlot, query).map((teacher) => ({ teacher, room, slot: currentSlot }));
+  });
+}
+
+function teacherScheduleForDay(rooms: StatusRoom[], query: string, time: string): TeacherScheduleItem[] {
+  if (!query.trim()) return [];
+
+  const currentMinute = timeToMinutes(time);
+  const schedule = rooms.flatMap((room): TeacherScheduleItem[] =>
+    (room.dailyPlan ?? []).flatMap((slot) => {
+      if (slot.status !== "busy" || !slot.start || !slot.end) return [];
+
+      return matchingTeachers(slot, query).map((teacher) => ({
+        teacher,
+        room,
+        slot,
+        state: "later" as GroupScheduleState,
+        startMinute: timeToMinutes(slot.start),
+        endMinute: timeToMinutes(slot.end)
+      }));
+    })
+  ).sort((a, b) =>
+    a.startMinute - b.startMinute ||
+    a.endMinute - b.endMinute ||
+    compareRoomsByFloor(a.room, b.room)
+  );
+  const nextStart = schedule.find((item) => item.startMinute > currentMinute)?.startMinute ?? null;
+
+  return schedule.map((item) => {
+    const state: GroupScheduleState =
+      item.startMinute <= currentMinute && item.endMinute >= currentMinute
+        ? "current"
+        : nextStart !== null && item.startMinute === nextStart
+          ? "next"
+          : item.startMinute > currentMinute
+            ? "later"
+            : "past";
+
+    return { ...item, state };
+  });
+}
+
+function teacherNameList(rooms: StatusRoom[]) {
+  const names = new Set<string>();
+
+  for (const room of rooms) {
+    for (const slot of room.dailyPlan ?? []) {
+      for (const name of slotTeacherNames(slot)) names.add(name);
+    }
+  }
+
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
 function currentModeLabel(status: AvailabilityStatus, t: Translator) {
   if (status.mode === "next") return t("nextLesson");
   if (status.mode === "custom") return t("customTime");
@@ -448,6 +544,7 @@ export default function RoomDashboard({ initialStatus, initialError }: RoomDashb
   const [stayUntil, setStayUntil] = useState(defaultStayUntil);
   const [query, setQuery] = useState("");
   const [groupQuery, setGroupQuery] = useState("");
+  const [teacherQuery, setTeacherQuery] = useState("");
   const [showBusy, setShowBusy] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(initialError);
@@ -780,6 +877,20 @@ export default function RoomDashboard({ initialStatus, initialError }: RoomDashb
   );
   const nextGroupClasses = useMemo(() => groupDaySchedule.filter((item) => item.state === "next"), [groupDaySchedule]);
   const groupHasDaySchedule = groupDaySchedule.length > 0;
+  const allTeachers = useMemo(() => teacherNameList(allRooms), [allRooms]);
+  const teacherMatches = useMemo(
+    () => findTeacherMatches(allRooms, teacherQuery, lookupTime),
+    [allRooms, teacherQuery, lookupTime]
+  );
+  const teacherDaySchedule = useMemo(
+    () => teacherScheduleForDay(allRooms, teacherQuery, lookupTime),
+    [allRooms, teacherQuery, lookupTime]
+  );
+  const nextTeacherClasses = useMemo(
+    () => teacherDaySchedule.filter((item) => item.state === "next"),
+    [teacherDaySchedule]
+  );
+  const teacherHasDaySchedule = teacherDaySchedule.length > 0;
   const stayStart = selectedTime || status?.time || "";
   const hasValidStayRange = isValidTimeRange(stayStart, stayUntil);
   const stayRooms = useMemo(
@@ -822,6 +933,7 @@ export default function RoomDashboard({ initialStatus, initialError }: RoomDashb
           <a href="#terminal">{t("terminal")}</a>
           <a href="#finder">{t("finder")}</a>
           <a href="#groups">{t("group")}</a>
+          <a href="#teachers">{t("teacher")}</a>
           <a href="#rooms">{t("rooms")}</a>
           <a href="#sync">{t("sync")}</a>
         </nav>
@@ -1037,6 +1149,122 @@ export default function RoomDashboard({ initialStatus, initialError }: RoomDashb
                           <p>
                             {item.group}
                             {item.slot.teacher ? ` - ${item.slot.teacher}` : ""}
+                          </p>
+                        </div>
+                        <div className="group-schedule-room">
+                          <span>{t("room")}</span>
+                          <button className="room-action" type="button" onClick={() => openRoom(item.room)}>
+                            {item.room.room}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section id="teachers" className="group-finder" aria-label={t("teacherLocator")}>
+        <div className="section-title">
+          <h2>{t("teacherLocator")}</h2>
+          <span>{status ? `${translatedDay(status.day, language)} ${status.time}` : t("loading")}</span>
+        </div>
+        <label className="group-search-label">
+          <span>{t("teacher")}</span>
+          <input
+            value={teacherQuery}
+            type="search"
+            list="teacher-options"
+            placeholder={t("enterTeacher")}
+            onChange={(event) => setTeacherQuery(event.target.value)}
+          />
+        </label>
+        <datalist id="teacher-options">
+          {allTeachers.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+        <div className="group-results" aria-live="polite">
+          {!teacherQuery.trim() ? (
+            <div className="empty-state">{t("enterTeacher")}</div>
+          ) : (
+            <>
+              {teacherMatches.length ? (
+                teacherMatches.map((match) => (
+                  <article
+                    className="group-result-card current"
+                    key={`${match.teacher}-${match.room.roomKey}-${match.slot.start}`}
+                  >
+                    <div className="group-result-main">
+                      <span className="group-result-kicker">{t("teaching")}</span>
+                      <strong>{match.teacher}</strong>
+                      <p>
+                        {match.slot.subject || t("classFallback")} - {match.slot.start}-{match.slot.end}
+                        {slotClassNames(match.slot).length ? ` - ${slotClassNames(match.slot).join(", ")}` : ""}
+                      </p>
+                    </div>
+                    <div className="group-result-meta">
+                      <span>{t("room")}</span>
+                      <strong>{match.room.room}</strong>
+                      <button className="room-footer room-action" type="button" onClick={() => openRoom(match.room)}>
+                        {t("open")}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state">
+                  {teacherHasDaySchedule ? t("teacherHasNoClass") : t("noMatchingTeacher")}
+                </div>
+              )}
+
+              {nextTeacherClasses.map((match) => (
+                <article
+                  className="group-result-card next"
+                  key={`next-${match.teacher}-${match.room.roomKey}-${match.slot.start}`}
+                >
+                  <div className="group-result-main">
+                    <span className="group-result-kicker">{t("nextClass")}</span>
+                    <strong>{match.teacher}</strong>
+                    <p>
+                      {match.slot.subject || t("classFallback")} - {match.slot.start}-{match.slot.end}
+                      {slotClassNames(match.slot).length ? ` - ${slotClassNames(match.slot).join(", ")}` : ""}
+                    </p>
+                  </div>
+                  <div className="group-result-meta">
+                    <span>{t("room")}</span>
+                    <strong>{match.room.room}</strong>
+                    <button className="room-footer room-action" type="button" onClick={() => openRoom(match.room)}>
+                      {t("open")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+
+              {teacherDaySchedule.length ? (
+                <div className="group-schedule">
+                  <div className="group-schedule-head">
+                    <strong>{t("dayClasses")}</strong>
+                    <span>{teacherDaySchedule.length} {t("lesson").toLowerCase()}</span>
+                  </div>
+                  <div className="group-schedule-list">
+                    {teacherDaySchedule.map((item) => (
+                      <article
+                        className={`group-schedule-item ${item.state}`}
+                        key={`${item.teacher}-${item.room.roomKey}-${item.slot.start}-${item.slot.end}`}
+                      >
+                        <div className="group-schedule-time">
+                          <span>{groupScheduleStateLabel(item.state, t)}</span>
+                          <strong>{item.slot.start}-{item.slot.end}</strong>
+                        </div>
+                        <div className="group-schedule-main">
+                          <strong>{item.slot.subject || t("classFallback")}</strong>
+                          <p>
+                            {item.teacher}
+                            {slotClassNames(item.slot).length ? ` - ${slotClassNames(item.slot).join(", ")}` : ""}
                           </p>
                         </div>
                         <div className="group-schedule-room">
