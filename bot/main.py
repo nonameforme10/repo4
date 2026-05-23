@@ -7,6 +7,7 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import BotCommand, BotCommandScopeChat
 
 from bot.app.handlers import admin, common, group, rooms
@@ -39,25 +40,37 @@ ADMIN_COMMANDS = [
 
 
 async def set_profile_text(bot: Bot) -> None:
-    await bot.set_my_short_description(short_description="Find free PDP rooms by time, room, or group.")
-    await bot.set_my_description(
-        description=(
-            "PDP Room Finder shows realtime room availability for PDP University. "
-            "Use the menu buttons to check available rooms, busy rooms, group schedules, and the Mini App."
+    try:
+        await bot.set_my_short_description(short_description="Find free PDP rooms by time, room, or group.")
+    except TelegramBadRequest as exc:
+        logging.warning("set_my_short_description failed: %s", exc)
+    try:
+        await bot.set_my_description(
+            description=(
+                "PDP Room Finder shows realtime room availability for PDP University. "
+                "Use the menu buttons to check available rooms, busy rooms, group schedules, and the Mini App."
+            )
         )
-    )
+    except TelegramBadRequest as exc:
+        logging.warning("set_my_description failed: %s", exc)
 
 
 async def set_commands(bot: Bot, config: Config) -> None:
     await set_profile_text(bot)
-    await bot.delete_my_commands()
-    await bot.set_my_commands(PUBLIC_COMMANDS)
+    try:
+        await bot.delete_my_commands()
+        await bot.set_my_commands(PUBLIC_COMMANDS)
+    except TelegramBadRequest as exc:
+        logging.warning("set_my_commands (public) failed: %s", exc)
 
     for admin_id in config.admin_ids:
-        await bot.set_my_commands(
-            [*PUBLIC_COMMANDS, *ADMIN_COMMANDS],
-            scope=BotCommandScopeChat(chat_id=admin_id),
-        )
+        try:
+            await bot.set_my_commands(
+                [*PUBLIC_COMMANDS, *ADMIN_COMMANDS],
+                scope=BotCommandScopeChat(chat_id=admin_id),
+            )
+        except TelegramBadRequest as exc:
+            logging.warning("set_my_commands for admin %s failed: %s", admin_id, exc)
 
 
 async def run(config: Config) -> None:
